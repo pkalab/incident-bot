@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 
 from slack_bolt import Ack
+from slack_bolt.context.say import Say
 from slack_bolt.context.respond import Respond
 
 from bot.models.incident import Incident, IncidentStatus, Severity
@@ -68,7 +69,7 @@ def handle_incident(ack: Ack, command: dict, say: Say, respond: Respond) -> None
             {"type": "mrkdwn", "text": f"*ID:*\n{incident_id}"},
             {"type": "mrkdwn", "text": f"*Severity:*\n{severity.value}"},
             {"type": "mrkdwn", "text": f"*Declared by:*\n<@{user_id}>"},
-            {"type": "mrkdwn", "text": f"*Status:*\nInvestigating"},
+            {"type": "mrkdwn", "text": "*Status:*\nInvestigating"},
         ]},
         {"type": "section", "text": {"type": "mrkdwn", "text": ":clipboard: *Next steps:*\n• Run `/playbook` to diagnose\n• Update `/status`\n• Resolve with `/incident resolve`"}},
     ]

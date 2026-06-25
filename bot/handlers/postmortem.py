@@ -1,7 +1,5 @@
-import os
 from datetime import datetime
 
-from jinja2 import Template
 from slack_bolt import Ack
 from slack_bolt.context.respond import Respond
 
@@ -9,8 +7,6 @@ from bot.models.incident import IncidentStore, Postmortem, TimelineEvent
 from bot.services.slack_client import post_message
 
 store = IncidentStore()
-
-TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "..", "templates", "postmortem.md")
 
 
 def handle_postmortem(ack: Ack, command: dict, respond: Respond) -> None:
@@ -35,25 +31,40 @@ def handle_postmortem(ack: Ack, command: dict, respond: Respond) -> None:
         created_at=datetime.now(),
     )
 
-    with open(TEMPLATE_PATH) as f:
-        template = Template(f.read())
-
     duration = ""
     if inc.resolved_at:
         delta = inc.resolved_at - inc.declared_at
         duration = f"{delta.total_seconds() / 60:.0f} minutes"
 
-    rendered = template.render(
-        incident_id=inc.id,
-        title=inc.title,
-        severity=inc.severity.value,
-        declared_at=inc.declared_at.isoformat(),
-        duration=duration,
-        summary=summary,
-        timeline=[e.model_dump() for e in pm.timeline],
-        root_causes=pm.root_causes,
-        action_items=pm.action_items,
+    timeline_lines = "\n".join(
+        f"- **{e.timestamp}** — {e.event} (by {e.actor})" for e in pm.timeline
     )
+    causes_lines = "\n".join(f"- {c}" for c in pm.root_causes)
+    items_lines = "\n".join(f"- [ ] {i}" for i in pm.action_items)
+
+    rendered = f"""# Postmortem: {inc.id}
+
+**Title:** {inc.title}
+**Severity:** {inc.severity.value}
+**Date:** {inc.declared_at.isoformat()}
+**Duration:** {duration}
+
+## Summary
+
+{summary}
+
+## Timeline
+
+{timeline_lines}
+
+## Root Causes (5 Whys)
+
+{causes_lines}
+
+## Action Items
+
+{items_lines}
+"""
 
     post_message(
         inc.channel_id,

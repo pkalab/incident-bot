@@ -1,15 +1,9 @@
 import os
-import subprocess
 
 
 def run() -> dict:
     try:
-        result = subprocess.run(
-            ["python3", "-c", "import os; print(os.cpu_count() or 'unknown')"],
-            capture_output=True, text=True, timeout=10,
-        )
-        cpu_count_str = result.stdout.strip()
-        cpu_count = int(cpu_count_str) if cpu_count_str.isdigit() else 1
+        cpu_count = os.cpu_count() or 1
         load_avg = os.getloadavg() if hasattr(os, "getloadavg") else (0, 0, 0)
         return {
             "status": "pass" if load_avg[0] < cpu_count else "warn",
